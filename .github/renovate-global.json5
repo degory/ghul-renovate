@@ -157,7 +157,16 @@
       // One pull request for the ghūl packages together rather than one each.
       // Merging any of these publishes a new package, and a run of separate
       // merges publishes a burst of them, which NuGet rate limits.
-      matchManagers: ['nuget'],
+      //
+      // Not restricted by manager: a ghūl package can be pinned in more than
+      // one kind of place in the same repository - the playground has its
+      // compiler and runtime in the tool manifest and a .csproj, which the
+      // nuget manager reads, and also in two Dockerfiles and a .ghulproj,
+      // which only the custom regex managers read. Naming the nuget manager
+      // here grouped only the first set, so a bump moved the manifest and left
+      // the Dockerfiles behind, and the repository's own check that the pins
+      // agree failed the build. All of a package's occurrences have to move
+      // together, which means all of its managers have to be in one group.
       matchPackageNames: ['/^ghul\\./'],
       groupName: 'ghūl packages',
     },
