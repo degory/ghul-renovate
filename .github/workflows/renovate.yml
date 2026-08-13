@@ -81,6 +81,7 @@ jobs:
           ghul-code-review
           ghul-web-api
           ghul-test
+          ghul-playground
           ghul-renovate
 
     - name: Renovate
