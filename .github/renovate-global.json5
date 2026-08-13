@@ -33,6 +33,7 @@
     'degory/ghul-code-review',
     'degory/ghul-web-api',
     'degory/ghul-test',
+    'degory/ghul-playground',
 
     // Itself, so the actions its own workflow pins stay current. It publishes
     // nothing and nothing builds against it, so it cannot be part of a loop.
@@ -90,12 +91,67 @@
   // is produced locally and never published, so looking it up finds nothing.
   ignoreDeps: ['example.classlib'],
 
-  // A .ghulproj is not an extension any updater recognises, but no ghūl
+  // A .ghulproj is not an extension any updater recognises, and nearly no ghūl
   // project declares package versions in one: they come from the
   // Directory.Build.props and Directory.Packages.props beside it, and the
   // nuget manager reads .props files directly, as it reads the pinned compiler
   // in .config/dotnet-tools.json. So the ghūl projects need no special
-  // handling here.
+  // handling here - except ghul-playground, which is the one that has no
+  // .props file and writes its runtime version into the .ghulproj itself.
+  //
+  // That repository writes the compiler and runtime versions in five places
+  // rather than one, because two of them are container images that install the
+  // versions rather than restoring them. All five have to move together: the
+  // services compile user code against one runtime and the browser loads
+  // another, so a version left behind is a program that compiles, downloads,
+  // and then fails to load. Its CI checks that the five agree, so a partial
+  // update fails rather than deploying - but only these managers make the
+  // update whole in the first place.
+  customManagers: [
+    {
+      // The two service images install the compiler by version rather than
+      // restoring it from a project, so the version is a build argument and no
+      // manager sees it. One entry per package rather than one matching both:
+      // the package a match belongs to would otherwise have to be derived from
+      // the text that matched.
+      customType: 'regex',
+      managerFilePatterns: ['/(^|/)(compile|analyse)-service/Dockerfile$/'],
+      matchStrings: ['ARG GHUL_COMPILER_VERSION=(?<currentValue>\\S+)'],
+      depNameTemplate: 'ghul.compiler',
+      datasourceTemplate: 'nuget',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: ['/(^|/)(compile|analyse)-service/Dockerfile$/'],
+      matchStrings: ['ARG GHUL_RUNTIME_VERSION=(?<currentValue>\\S+)'],
+      depNameTemplate: 'ghul.runtime',
+      datasourceTemplate: 'nuget',
+    },
+    {
+      // The runner names its runtime in the .ghulproj itself, there being no
+      // Directory.Packages.props beside it to carry the version.
+      customType: 'regex',
+      managerFilePatterns: ['/(^|/)runner/runner\\.ghulproj$/'],
+      matchStrings: [
+        '<PackageReference Include="(?<depName>ghul\\.runtime)" Version="(?<currentValue>[^"]+)"',
+      ],
+      datasourceTemplate: 'nuget',
+    },
+    {
+      // The language server is installed from a ghul-vsce release asset rather
+      // than from a registry, so the version is a build argument and the URL
+      // beneath it is built from the same argument.
+      customType: 'regex',
+      managerFilePatterns: ['/(^|/)analyse-service/Dockerfile$/'],
+      matchStrings: [
+        'ARG GHUL_LANGUAGE_SERVER_VERSION=(?<currentValue>\\S+)',
+      ],
+      depNameTemplate: 'degory/ghul-vsce',
+      datasourceTemplate: 'github-releases',
+      extractVersionTemplate: '^v(?<version>.*)$',
+    },
+  ],
+
   packageRules: [
     {
       // One pull request for the ghūl packages together rather than one each.
