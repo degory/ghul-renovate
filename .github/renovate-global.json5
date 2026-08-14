@@ -15,14 +15,21 @@
   // ghul-examples builds against, and ghul-examples publishes nothing, so that
   // one stops there.
   //
-  // ghul is what would close the loop, and stays out: it builds against
-  // ghul.test and ghul.runtime, and publishes the ghul.compiler that ghul-test
-  // builds against. So ghul-test is safe to update automatically only for as
-  // long as ghul is not. Adding ghul means first gating it so a person decides
-  // when it republishes - a loop only runs by itself if every step in it is
-  // automatic. ghul-runtime is absent for the same reason as ghul-test would
-  // be: it is one edge of that same loop.
+  // ghul is in the middle of two of them, and is here anyway, because a cycle
+  // only runs by itself if every edge in it is automatic - so it is enough to
+  // leave one edge of each to a person, and it does not have to be the edge
+  // anyone cares about. The two cycles, and where each is cut, are in the
+  // package rules at the foot of this file. What that buys is the thing the
+  // exclusion was costing: the compiler drifted two majors behind the runtime,
+  // and what that hid was not a stale version number but a crash - one call
+  // site that killed the compiler outright on source anyone could write.
+  //
+  // ghul-runtime stays out, and is now the cut in the cycle it shares with
+  // ghul: its compiler pin moves when a runtime change needs a newer compiler,
+  // which is a judgement rather than a version comparison. Automating both
+  // ends of that pair is what would run away.
   repositories: [
+    'degory/ghul',
     'degory/ghul-templates',
     'degory/ghul-repository-template',
     'degory/ghul-examples',
@@ -186,6 +193,53 @@
       // instead of one per action.
       matchManagers: ['github-actions'],
       groupName: 'workflow actions',
+    },
+
+    // The three rules below are what let ghul be updated here at all. They
+    // come last because a later rule wins, and each one overrides the grouping
+    // above for a single package in a single repository.
+    {
+      // ghul pins the ghul.compiler it publishes, in its own tool manifest, so
+      // left alone this rule's absence would have Renovate update the
+      // repository against its own output: merge, publish, offer the version
+      // just published, forever, with no second repository involved. The
+      // tightest loop available and the only one that needs no cycle to run.
+      //
+      // Nothing is lost by ignoring it. The pin is a local-dev fallback so
+      // that `dotnet tool restore` has a compiler at all; CI resolves the
+      // bootstrap compiler at run time and never reads it.
+      matchRepositories: ['degory/ghul'],
+      matchPackageNames: ['ghul.compiler'],
+      enabled: false,
+    },
+    {
+      // The edge this whole change exists for, and the automatic one: the
+      // compiler tracks the runtime. Merging publishes a compiler, and the
+      // repository that would react to that is ghul-runtime, whose own pin is
+      // moved by a person - so this stops after one step.
+      //
+      // Its own group, because the rule below has to be able to not automerge
+      // without dragging this one along: automerge is decided per pull
+      // request, so two packages sharing a group share a verdict.
+      matchRepositories: ['degory/ghul'],
+      matchPackageNames: ['ghul.runtime'],
+      groupName: 'ghul.runtime',
+      automerge: true,
+    },
+    {
+      // The cut in the other cycle. ghul publishes ghul.compiler, ghul-test
+      // updates itself against it and publishes ghul.test, and ghul builds
+      // against that - which arrives back here. Raising the pull request is
+      // useful; merging it without anyone looking is what would close the
+      // ring, so the update is offered and waits.
+      //
+      // A fair place to stop, because the runner's version is the one that
+      // affects nothing shipped: it decides how the tests are run, not what
+      // the compiler emits.
+      matchRepositories: ['degory/ghul'],
+      matchPackageNames: ['ghul.test'],
+      groupName: 'ghul.test',
+      automerge: false,
     },
   ],
 }

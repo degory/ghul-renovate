@@ -70,7 +70,11 @@ jobs:
         app-id: '3784377'
         private-key: ${{ secrets.GHUL_CODER_PRIVATE_KEY }}
         owner: ${{ github.repository_owner }}
+        # Has to list every repository the configuration names: the token is
+        # scoped to what is here, so one named there and not here is one
+        # Renovate is told to update and then cannot read.
         repositories: |
+          ghul
           ghul-templates
           ghul-repository-template
           ghul-examples
