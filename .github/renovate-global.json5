@@ -126,6 +126,18 @@
       matchStrings: ['ARG GHUL_COMPILER_VERSION=(?<currentValue>\\S+)'],
       depNameTemplate: 'ghul.compiler',
       datasourceTemplate: 'nuget',
+      // Without this, a regex-detected dep defaults to Renovate's 'nuget'
+      // versioning scheme instead of the 'semver' versioning the built-in
+      // nuget manager uses for the same package elsewhere in this repository
+      // (.config/dotnet-tools.json, web/web.csproj) - and the two schemes
+      // disagreed about what "current" meant. Under 'nuget' versioning,
+      // currentVersion resolved to the newest release on the feed rather than
+      // to currentValue, so Renovate always computed zero updates available
+      // and the Dockerfile pins silently stopped moving while the manifest
+      // kept advancing. Confirmed by a scoped debug dry-run (2026-08-15):
+      // adding this made the Dockerfile ARGs move again, in the same commit
+      // as the manifest, exactly as the grouping rule above intends.
+      versioningTemplate: 'semver',
     },
     {
       customType: 'regex',
@@ -133,6 +145,7 @@
       matchStrings: ['ARG GHUL_RUNTIME_VERSION=(?<currentValue>\\S+)'],
       depNameTemplate: 'ghul.runtime',
       datasourceTemplate: 'nuget',
+      versioningTemplate: 'semver',
     },
     {
       // The runner names its runtime in the .ghulproj itself, there being no
@@ -143,6 +156,7 @@
         '<PackageReference Include="(?<depName>ghul\\.runtime)" Version="(?<currentValue>[^"]+)"',
       ],
       datasourceTemplate: 'nuget',
+      versioningTemplate: 'semver',
     },
     {
       // The language server is installed from a ghul-vsce release asset rather
