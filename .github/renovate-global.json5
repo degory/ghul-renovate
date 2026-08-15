@@ -194,6 +194,16 @@
       matchManagers: ['github-actions'],
       groupName: 'workflow actions',
     },
+    {
+      // FluentAssertions 8 replaces the Apache-2.0 licence with a commercial
+      // one, and its assertion classes dropped the single-argument
+      // constructors ghul-test's wrappers call, so the major does not compile
+      // regardless of licence. The library is leaving with the MSTest 4
+      // migration; until that lands, hold updates to the last
+      // Apache-licensed line so no repository is offered 8.x again.
+      matchPackageNames: ['FluentAssertions'],
+      allowedVersions: '<8.0.0',
+    },
 
     // The three rules below are what let ghul be updated here at all. They
     // come last because a later rule wins, and each one overrides the grouping
