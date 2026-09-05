@@ -56,6 +56,14 @@
 
   dependencyDashboard: true,
 
+  // A major update is otherwise split into its own pull request even inside
+  // a group that already covers its minor and patch releases, which is the
+  // grouping rules below being partly undone by Renovate's own default. The
+  // same CI gate justifies both kinds of update below, so there is nothing a
+  // major needs kept separate for here - folding it back in is what actually
+  // gets a group down to one pull request instead of two.
+  separateMajorMinor: false,
+
   // Every target repository's CI builds what it depends on and runs the
   // result, so a version that breaks it fails the checks and the pull request
   // stays open. That gate is what makes merging without review reasonable
