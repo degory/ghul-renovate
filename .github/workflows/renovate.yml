@@ -21,14 +21,19 @@ name: Renovate
 
 on:
   schedule:
-    # Every six hours, off the hour: scheduled workflows are queued at busy
+    # Every other day, off the hour: scheduled workflows are queued at busy
     # times.
     #
     # The interval is how long an update waits once another has landed ahead of
     # it. Merging one pull request leaves the rest behind the base branch, and a
     # branch only gets rebased by a run, so anything left behind sits until the
-    # next one. A run with nothing to update costs about a minute.
-    - cron: '17 */6 * * *'
+    # next one. A run with nothing to update costs about a minute. Six-hourly
+    # was needlessly tight for how slowly these dependencies actually move, and
+    # the longer gap between runs also means more updates have landed by the
+    # time a run happens, so a package's minor and patch releases are more
+    # likely to already be batched into one pull request rather than trickling
+    # in as several.
+    - cron: '17 3 */2 * *'
 
   workflow_dispatch:
     inputs:
