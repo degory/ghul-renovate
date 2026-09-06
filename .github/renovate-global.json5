@@ -56,6 +56,31 @@
 
   dependencyDashboard: true,
 
+  // Renovate updates what a manifest declares, so a vulnerability that exists
+  // only in a lock file has nothing for it to bump: the package appears in no
+  // package.json, so there is no version constraint to move and no pull
+  // request is raised. GitHub's alerts do report those, which left the
+  // transitive half of every npm tree covered by nothing - ghul-vsce carried
+  // thirteen open high-severity alerts against four packages, none of them a
+  // declared dependency of anything here.
+  //
+  // Regenerating the lock file is the remedy Renovate offers for that: every
+  // transitive package moves to the newest version its existing constraints
+  // already allow, which is where the fixes for this class of alert live.
+  // The npm-only transitiveRemediation that used to target them individually
+  // was withdrawn, so this is the whole of what is available.
+  //
+  // Scheduled to run whenever the workflow does, rather than on Renovate's
+  // own default of Monday before four. The workflow's cron fires on odd days
+  // of the month, so only about half of all Mondays are days it runs at all,
+  // and the default would skip the rest without saying so. A run with an
+  // unchanged lock file opens nothing, so the cost of the wider window is a
+  // regeneration that finds no diff.
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ['at any time'],
+  },
+
   // A major update is otherwise split into its own pull request even inside
   // a group that already covers its minor and patch releases, which is the
   // grouping rules below being partly undone by Renovate's own default. The
