@@ -242,6 +242,17 @@
       groupName: 'workflow actions',
     },
     {
+      // A container image a workflow names is the github-actions manager's as
+      // well, so without this it rides in the pull request above alongside the
+      // action bumps. They are not the same decision: an action update is
+      // routine, while the SDK the build runs in decides what the compiler is
+      // handed, and one that does not build reddens the whole group and stalls
+      // every action update travelling with it.
+      matchManagers: ['github-actions'],
+      matchDatasources: ['docker'],
+      groupName: 'workflow container images',
+    },
+    {
       // FluentAssertions 8 replaces the Apache-2.0 licence with a commercial
       // one, and its assertion classes dropped the single-argument
       // constructors ghul-test's wrappers call, so the major does not compile
