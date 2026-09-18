@@ -242,6 +242,37 @@
       groupName: 'workflow actions',
     },
     {
+      // A container image a workflow names is the github-actions manager's as
+      // well, so without this it rides in the pull request above alongside the
+      // action bumps. They are not the same decision: an action update is
+      // routine, while the SDK the build runs in decides what the compiler is
+      // handed, and one that does not build reddens the whole group and stalls
+      // every action update travelling with it.
+      matchManagers: ['github-actions'],
+      matchDatasources: ['docker'],
+      groupName: 'workflow container images',
+    },
+    {
+      // Everything here targets .NET 10, and the move to the next .NET is a
+      // decision for a person rather than an update: the ghūl compiler does
+      // not run under the .NET 11 SDK, so an image bump to it fails every
+      // build it touches and sits open until someone closes it. Held at the
+      // 10.x line wherever the platform's own version shows up - the SDK and
+      // runtime images, the SDK a global.json names, and the framework's own
+      // packages, which are versioned with it.
+      matchPackageNames: [
+        '/^mcr\\.microsoft\\.com\\/dotnet\\//',
+        'dotnet-sdk',
+        'dotnet-runtime',
+        '/^Microsoft\\.AspNetCore\\./',
+        '/^Microsoft\\.Extensions\\./',
+        '/^Microsoft\\.NETCore\\./',
+        '/^Microsoft\\.NET\\.Sdk/',
+        '/^System\\./',
+      ],
+      allowedVersions: '<11',
+    },
+    {
       // FluentAssertions 8 replaces the Apache-2.0 licence with a commercial
       // one, and its assertion classes dropped the single-argument
       // constructors ghul-test's wrappers call, so the major does not compile
